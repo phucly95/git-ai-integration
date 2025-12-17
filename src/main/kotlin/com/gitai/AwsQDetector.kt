@@ -18,9 +18,7 @@ class AwsQDetector : Disposable {
     private var lastFsReplaceTime: Long = 0
 
     init {
-        val msg = "[GIT-AI-DETECTOR] Initializing..."
-        LOG.info(msg)
-        println(msg)
+        LOG.info("[GIT-AI-DETECTOR] Initializing...")
         setupLogInterceptor()
         setupCommandListener()
     }

@@ -1,10 +1,13 @@
 <idea-plugin>
-    <id>com.gitai.webstorm.probe</id>
-    <name>Git AI Probe</name>
-    <vendor email="support@gitai.com" url="https://usegitai.com">Git AI</vendor>
+    <id>com.gitai.webstorm.integration</id>
+    <name>Git AI Integration</name>
+    <vendor email="support@gitai.com" url="https://usegitai.com">rdb-platform</vendor>
 
     <description><![CDATA[
-    Probe plugin to log IntelliJ Command and Action events for Git AI integration research.
+    INTELLIGENT AUTOSAVE & TRACKING FOR AI-ASSISTED CODING
+    
+    Git AI automatically tracks your code changes, attributing them correctly to either you or your AI assistants (like AWS Q). 
+    It ensures your commit history accurately reflects who wrote what, providing a seamless and transparent development experience.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

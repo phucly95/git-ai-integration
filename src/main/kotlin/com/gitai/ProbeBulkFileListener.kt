@@ -18,8 +18,7 @@ class ProbeBulkFileListener : BulkFileListener {
             }
             
             val message = "[GIT-AI-PROBE] File Event: ${event.javaClass.simpleName}, Path='$path', Requestor='$requestorInfo'"
-            LOG.info(message)
-            println(message)
+            LOG.debug(message)
             
             // Attribution for File Copy / Create / Move (e.g. via Project View)
             // AWS Q uses fsReplace which triggers VFileContentChangeEvent via "refresh", 

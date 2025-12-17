@@ -25,7 +25,7 @@ class CheckpointManager {
     private val HUMAN_DEBOUNCE_MS = 1500L
 
     init {
-        println("[GIT-AI-MANAGER] CheckpointManager initialized.")
+        LOG.info("[GIT-AI-MANAGER] CheckpointManager initialized.")
     }
 
     /**

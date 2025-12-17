@@ -9,7 +9,20 @@ import java.util.concurrent.TimeUnit
 @Service(Service.Level.PROJECT)
 class GitAiService(private val project: Project) {
     private val LOG = Logger.getInstance(GitAiService::class.java)
-    private val GIT_AI_PATH = System.getProperty("user.home") + "/.git-ai/bin/git-ai"
+
+    /**
+     * Resolves the path to the git-ai executable.
+     * Checks ~/.git-ai/bin/git-ai first, then falls back to "git-ai" in PATH.
+     */
+    private val gitAiPath: String
+        get() {
+            val defaultPath = File(System.getProperty("user.home"), ".git-ai/bin/git-ai")
+            return if (defaultPath.exists()) {
+                defaultPath.absolutePath
+            } else {
+                "git-ai" // Fallback to PATH
+            }
+        }
 
     fun checkpointHuman() {
         runCommand("checkpoint")
@@ -42,18 +55,20 @@ class GitAiService(private val project: Project) {
             }
         """.trimIndent()
 
-        println("[GIT-AI-Payload] $payload")
         runCommand("checkpoint", "agent-v1", "--hook-input", payload)
     }
 
     private fun runCommand(vararg args: String) {
-        if (!File(GIT_AI_PATH).exists()) {
-            LOG.warn("[GIT-AI] Binary not found at $GIT_AI_PATH")
-            return
+        val executable = gitAiPath
+        
+        // If using absolute path and it doesn't exist (double check), warn
+        if (executable.startsWith("/") && !File(executable).exists()) {
+             LOG.warn("[GIT-AI] Binary not found at $executable")
+             return
         }
 
         try {
-            val command = mutableListOf(GIT_AI_PATH)
+            val command = mutableListOf(executable)
             command.addAll(args)
 
             val process = ProcessBuilder(command)
