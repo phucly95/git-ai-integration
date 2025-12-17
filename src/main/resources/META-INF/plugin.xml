@@ -1,0 +1,24 @@
+<idea-plugin>
+    <id>com.gitai.webstorm.probe</id>
+    <name>Git AI Probe</name>
+    <vendor email="support@gitai.com" url="https://usegitai.com">Git AI</vendor>
+
+    <description><![CDATA[
+    Probe plugin to log IntelliJ Command and Action events for Git AI integration research.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="com.gitai.GitAiService"/>
+        <applicationService serviceImplementation="com.gitai.AwsQDetector"/>
+        <applicationService serviceImplementation="com.gitai.CheckpointManager"/>
+        <postStartupActivity implementation="com.gitai.AwsQStartupActivity"/>
+    </extensions>
+
+    <applicationListeners>
+        <listener class="com.gitai.ProbeListener" topic="com.intellij.openapi.command.CommandListener"/>
+        <listener class="com.gitai.ProbeBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <listener class="com.gitai.HumanActivityListener" topic="com.intellij.openapi.command.CommandListener"/>
+    </applicationListeners>
+</idea-plugin>
