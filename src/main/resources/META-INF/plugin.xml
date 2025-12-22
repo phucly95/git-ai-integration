@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.gitai.webstorm.integration</id>
-    <name>Git AI Integration</name>
+    <name>Git AI Tracking</name>
     <vendor email="support@gitai.com" url="https://usegitai.com">rdb-platform</vendor>
 
     <description><![CDATA[
@@ -17,6 +17,7 @@
         <applicationService serviceImplementation="com.gitai.AwsQDetector"/>
         <applicationService serviceImplementation="com.gitai.CheckpointManager"/>
         <postStartupActivity implementation="com.gitai.AwsQStartupActivity"/>
+        <notificationGroup id="Git AI Notification Group" displayType="BALLOON"/>
     </extensions>
 
     <applicationListeners>

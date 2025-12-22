@@ -13,6 +13,12 @@ import com.intellij.openapi.util.SystemInfo
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+
 
 @Service(Service.Level.PROJECT)
 class GitAiService(private val project: Project) {
@@ -129,6 +135,23 @@ class GitAiService(private val project: Project) {
         
         // 6. Configure Shell Path
         configureShellPath()
+
+        // 7. Prompt for Restart
+        val notification = NotificationGroupManager.getInstance()
+            .getNotificationGroup("Git AI Notification Group")
+            .createNotification(
+                "Git AI Tracking Installed",
+                "Standard environment variables updated. Restart IDE to apply changes.",
+                NotificationType.INFORMATION
+            )
+        
+        notification.addAction(object : AnAction("Restart IDE Config") {
+            override fun actionPerformed(e: AnActionEvent) {
+                ApplicationManager.getApplication().restart()
+            }
+        })
+        
+        notification.notify(project)
     }
     
     private fun configureShellPath() {
