@@ -99,6 +99,7 @@ class CheckpointManager {
         for (project in projects) {
             val service = project.getService(GitAiService::class.java)
             service?.checkpointHuman()
+            updateWidgets(project)
         }
     }
 
@@ -107,6 +108,27 @@ class CheckpointManager {
         for (project in projects) {
             val service = project.getService(GitAiService::class.java)
             service?.checkpointAwsQ(filePath)
+            // Trigger Widget Update
+            updateWidgets(project)
+        }
+    }
+    
+    private fun updateWidgets(project: com.intellij.openapi.project.Project) {
+        val statusBar = com.intellij.openapi.wm.WindowManager.getInstance().getStatusBar(project)
+        statusBar?.updateWidget("GitAiStatusBarWidget")
+        
+        // Also simpler: Finding the widget instance if we could, 
+        // but 'updateWidget' ID causes it to re-fetch data via getPresentation() -> text/tooltip? 
+        // Actually our widget fetches data in 'updateStats' manually or via install. 
+        // We need to tell the WIDGET to refresh data.
+        // Since we don't have direct ref easily without factory lookup, let's use message bus? 
+        // OR simply rely on the fact that 'updateWidget' usually refreshes presentation.
+        // BUT our presentation is dynamic based on 'lastStats'. We need to re-fetch stats.
+        
+        // Hack: Let's find the widget and call 'updateStats'
+        val widget = statusBar?.getWidget("GitAiStatusBarWidget")
+        if (widget is GitAiStatusBarWidget) {
+            widget.updateStats()
         }
     }
 }

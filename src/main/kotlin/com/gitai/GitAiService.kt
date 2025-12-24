@@ -280,7 +280,7 @@ class GitAiService(private val project: Project) {
             val completed = process.waitFor(5, TimeUnit.SECONDS)
             if (completed) {
                 if (process.exitValue() == 0) {
-                    LOG.info("[GIT-AI] Successfully executed: ${command.joinToString(" ")}")
+                    // LOG.info("[GIT-AI] Successfully executed: ${command.joinToString(" ")}")
                 } else {
                     val error = process.errorStream.bufferedReader().readText()
                     LOG.warn("[GIT-AI] Command failed: ${command.joinToString(" ")}. Error: $error")
@@ -292,5 +292,129 @@ class GitAiService(private val project: Project) {
         } catch (e: Exception) {
             LOG.error("[GIT-AI] Exception running command", e)
         }
+    }
+    // --- Stats & Reporting ---
+
+    data class CommitStats(
+        var human_additions: Int = 0,
+        var mixed_additions: Int = 0,
+        var ai_additions: Int = 0,
+        var ai_accepted: Int = 0,
+        var total_ai_additions: Int = 0,
+        var total_ai_deletions: Int = 0,
+        var time_waiting_for_ai: Double = 0.0,
+        var git_diff_deleted_lines: Int = 0,
+        var git_diff_added_lines: Int = 0,
+        // ignoring tool_model_breakdown for simple UI
+    )
+
+    data class DetailedCommitStats(
+        val stats: CommitStats,
+        val hash: String,
+        val shortHash: String,
+        val author: String,
+        val subject: String
+    )
+
+    data class RecentCommitsData(
+        val aggregated: CommitStats,
+        val commits: List<DetailedCommitStats>
+    )
+
+    fun getRecentStats(depth: Int): RecentCommitsData? {
+        if (depth < 1) return null
+        val basePath = project.basePath ?: return null
+        
+        // 1. Get recent commits metadata
+        // Format: Hash|||ShortHash|||Author|||Subject
+        val logCmd = listOf("git", "log", "-n", depth.toString(), "--pretty=format:%H|||%h|||%an|||%s", "HEAD")
+        val logOutput = runCommandWithType(logCmd, basePath) ?: return null
+        
+        val lines = logOutput.lines().filter { it.isNotBlank() }
+        if (lines.isEmpty()) return null
+        
+        val commits = mutableListOf<DetailedCommitStats>()
+        
+        for (line in lines) {
+            val parts = line.split("|||")
+            if (parts.size < 4) continue
+            
+            val hash = parts[0]
+            val shortHash = parts[1]
+            val author = parts[2]
+            val subject = parts[3]
+            
+            // 2. Fetch stats for each commit
+            val statsJson = runGitAiStats(hash, basePath) ?: continue
+            val cStats = parseCommitStats(statsJson)
+            
+            commits.add(DetailedCommitStats(cStats, hash, shortHash, author, subject))
+        }
+        
+        if (commits.isEmpty()) return null
+        
+        // 3. Aggregate
+        val agg = CommitStats()
+        for (c in commits) {
+            agg.human_additions += c.stats.human_additions
+            agg.mixed_additions += c.stats.mixed_additions
+            agg.ai_additions += c.stats.ai_additions
+            agg.ai_accepted += c.stats.ai_accepted
+            agg.total_ai_additions += c.stats.total_ai_additions
+            agg.total_ai_deletions += c.stats.total_ai_deletions
+            agg.time_waiting_for_ai += c.stats.time_waiting_for_ai
+            agg.git_diff_deleted_lines += c.stats.git_diff_deleted_lines
+            agg.git_diff_added_lines += c.stats.git_diff_added_lines
+        }
+        
+        return RecentCommitsData(agg, commits)
+    }
+
+    private fun runGitAiStats(rev: String, cwd: String): String? {
+        // git-ai stats <rev> --json
+        val cmd = listOf(gitAiPath, "stats", rev, "--json")
+        return runCommandWithType(cmd, cwd)
+    }
+    
+    private fun parseCommitStats(jsonStr: String): CommitStats {
+        val stats = CommitStats()
+        try {
+            val element = Json.parseToJsonElement(jsonStr).jsonObject
+            // specific nesting: element might be root stats OR { "range_stats": ... }
+            // Handling both like in TS
+            val root = if (element.containsKey("range_stats")) {
+                element["range_stats"]!!.jsonObject
+            } else {
+                element
+            }
+            
+            stats.human_additions = root["human_additions"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            stats.mixed_additions = root["mixed_additions"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            stats.ai_additions = root["ai_additions"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            stats.ai_accepted = root["ai_accepted"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            
+            // Parse others if needed, for now these are the critical ones for the UI
+        } catch (e: Exception) {
+            LOG.warn("Failed to parse stats JSON: ${e.message}")
+        }
+        return stats
+    }
+    
+    private fun runCommandWithType(command: List<String>, cwd: String): String? {
+        try {
+            val process = ProcessBuilder(command)
+                .directory(File(cwd))
+                .start()
+            
+            process.waitFor(5, TimeUnit.SECONDS)
+            if (process.exitValue() == 0) {
+                return process.inputStream.bufferedReader().readText()
+            } else {
+                // LOG.warn("Command failed: $command")
+            }
+        } catch (e: Exception) {
+            LOG.warn("Excecution error: $command", e)
+        }
+        return null
     }
 }

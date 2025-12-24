@@ -18,6 +18,7 @@
         <applicationService serviceImplementation="com.gitai.CheckpointManager"/>
         <postStartupActivity implementation="com.gitai.AwsQStartupActivity"/>
         <notificationGroup id="Git AI Notification Group" displayType="BALLOON"/>
+        <statusBarWidgetFactory implementation="com.gitai.GitAiStatusBarWidgetFactory"/>
     </extensions>
 
     <applicationListeners>
